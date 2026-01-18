@@ -2,21 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <unistd.h>
 #include "nob.h"
 
 
-#define MAX2(A, B) ({ \
-    __typeof__ (A) _a = (A); \
-    __typeof__ (B) _b = (B); \
-    _a > _b ? _a : _b; \
-})
-
-#define MIN2(A, B) ({ \
-    __typeof__ (A) _a = (A); \
-    __typeof__ (B) _b = (B); \
-    _a < _b ? _a : _b; \
-})
+static inline int max_int(int a, int b) { return a > b ? a : b; }
+static inline int min_int(int a, int b) { return a < b ? a : b; }
 
 #define FIELD_H 15
 #define FIELD_W 20
@@ -47,6 +37,8 @@ Textures load_animation(const char *id, size_t count) {
         .count = count,
     };
 
+    assert(result.items != NULL && "Get more RAM lol");
+
     for (size_t i = 0; i < count; i++) {
         result.items[i] = load_sprite(nob_temp_sprintf("assets/sprites/%s_%02zu.png", id, i));
     }
@@ -73,15 +65,17 @@ typedef enum {
     EntityType_Block1,
 } EntityType;
 
+// SoA optimization for (theoretically) CPU caching
 EntityType entity_types[FIELD_LEN];
 int oil[FIELD_LEN];
 int oil_limit[FIELD_LEN];
 
-size_t to_index(size_t x, size_t y) {
+static inline size_t to_index(size_t x, size_t y) {
+    assert(x < FIELD_W && y < FIELD_H && "Indexing out of game field bounds");
     return y * FIELD_W + x;
 }
 
-void from_index(size_t i, int *x, int *y) {
+static inline void from_index(size_t i, int *x, int *y) {
     *x = i % FIELD_W;
     *y = i / FIELD_W;
 }
@@ -117,6 +111,7 @@ void put_pump(int x, int y) {
 int main() {
     srand(time(NULL));
     InitWindow(FIELD_W * total_sprite_size, FIELD_H * total_sprite_size, "Hello world");
+    SetTargetFPS(fps);
 
     // INITIALIZATION //
     memset(entity_types, 0, FIELD_LEN * sizeof(entity_types[0]));
@@ -158,11 +153,11 @@ int main() {
         int pipe_max_length = 0;
         for (int i = 0; i < tanks_n; i++) {
             pipe_lengths[i] = rand() % 5 + 1;
-            pipe_max_length = MAX2(pipe_lengths[i], pipe_max_length);
+            pipe_max_length = max_int(pipe_lengths[i], pipe_max_length);
         }
 
-        int x = padding + rand() % (FIELD_H - 2 * padding - tanks_n - 1);
-        int y = padding + rand() % (FIELD_W - 2 * padding - pipe_max_length - 2);
+        int x = padding + rand() % (FIELD_W - 2 * padding - tanks_n - 1);
+        int y = padding + rand() % (FIELD_H - 2 * padding - pipe_max_length - 2);
 
         for (int i = 0; i < tanks_n; i++) {
             put_tank(x + i, y);
@@ -189,7 +184,7 @@ int main() {
                     animation = oil[i] > 0 ? vent : vent_stopped;
                     break;
                 case EntityType_Tank:
-                    animation = tank[MIN2(8, oil[i])];
+                    animation = tank[min_int(8, oil[i])];
                     break;
                 case EntityType_PipeUp:
                     animation = oil[i] > 0 ? pipe_up : pipe_up_stopped;
@@ -225,7 +220,7 @@ int main() {
                 switch(entity_types[i]) {
                 case EntityType_Vent:
                     if (frame_n % fps == 0) {
-                        oil_next[i] = MAX2(oil[i] - 1, 0);
+                        oil_next[i] = max_int(oil[i] - 1, 0);
                     }
                     break;
 
@@ -241,6 +236,7 @@ int main() {
                             oil_next[i]--;
                         }
                     }
+                    break;
 
                 case EntityType_PipeUp:
                     if (frame_n % fps == 0 && oil[i] > 0) {
@@ -258,7 +254,6 @@ int main() {
                 case EntityType_Pump: {
                     size_t j = to_index(x, y - 1);
                     if (frame_n % (3 * fps) == 0 && oil[j] == 0) {
-                        oil_next[i]--;
                         oil_next[j]++;
                     }
                     } break;
@@ -270,10 +265,18 @@ int main() {
 
             memcpy(oil, oil_next, FIELD_LEN * sizeof(int));
         EndDrawing();
-
-        usleep(1000000 / fps);
         frame_n++;
     }
+
+    free_animation(&none);
+    free_animation(&vent);
+    free_animation(&vent_stopped);
+    for (size_t i = 0; i < 9; i++) free_animation(&tank[i]);
+    free_animation(&pipe_up);
+    free_animation(&pipe_up_stopped);
+    free_animation(&pump);
+    free_animation(&block_0);
+    free_animation(&block_1);
 
     CloseWindow();
     return 0;
