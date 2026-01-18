@@ -103,7 +103,7 @@ int main() {
         load_animation("tank_7", 4),
         load_animation("tank_8", 4),
     };
-    Textures pipe_vert = load_animation("pipe_vert", 1);
+    Textures pipe_vert = load_animation("pipe_vert", 5);
     Textures block_0 = load_animation("block_0", 1);
     Textures block_1 = load_animation("block_1", 1);
 
