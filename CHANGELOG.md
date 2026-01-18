@@ -2,7 +2,7 @@
 
 - [x] Display it
 - [x] None-sprite
-- [ ] Different oil levels
+- [x] Different oil levels
 
 ## (1) A vent
 

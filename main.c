@@ -1,4 +1,3 @@
-#include <math.h>
 #include <raylib.h>
 #include <string.h>
 #include <unistd.h>
@@ -9,6 +8,12 @@
     __typeof__ (A) _a = (A); \
     __typeof__ (B) _b = (B); \
     _a > _b ? _a : _b; \
+})
+
+#define MIN2(A, B) ({ \
+    __typeof__ (A) _a = (A); \
+    __typeof__ (B) _b = (B); \
+    _a < _b ? _a : _b; \
 })
 
 #define FIELD_H 20
@@ -57,9 +62,9 @@ void free_animation(Textures *tex) {
 }
 
 typedef enum {
-    SpriteId_None = 0,
-    SpriteId_Vent,
-    SpriteId_Tank,
+    EntityType_None = 0,
+    EntityType_Vent,
+    EntityType_Tank,
 } EntityType;
 
 EntityType entity_types[FIELD_LEN];
@@ -67,6 +72,11 @@ int oil[FIELD_LEN];
 
 size_t to_index(size_t x, size_t y) {
     return y * FIELD_W + x;
+}
+
+void from_index(size_t i, int *x, int *y) {
+    *x = i % FIELD_W;
+    *y = i / FIELD_W;
 }
 
 int main() {
@@ -78,12 +88,22 @@ int main() {
 
     Textures vent = load_animation("vent", 2);
     Textures vent_stopped = load_animation("vent", 1);
-    Textures tank = load_animation("tank_8", 4);
+    Textures tank[] = {
+        load_animation("tank_0", 4),
+        load_animation("tank_1", 4),
+        load_animation("tank_2", 4),
+        load_animation("tank_3", 4),
+        load_animation("tank_4", 4),
+        load_animation("tank_5", 4),
+        load_animation("tank_6", 4),
+        load_animation("tank_7", 4),
+        load_animation("tank_8", 4),
+    };
     Textures none = load_animation("none", 1);
 
-    entity_types[to_index(3, 3)] = SpriteId_Vent;
-    entity_types[to_index(4, 5)] = SpriteId_Vent;
-    entity_types[to_index(3, 5)] = SpriteId_Tank;
+    entity_types[to_index(3, 3)] = EntityType_Vent;
+    entity_types[to_index(4, 5)] = EntityType_Vent;
+    entity_types[to_index(3, 5)] = EntityType_Tank;
 
     oil[to_index(4, 5)] = 5;
     oil[to_index(3, 5)] = 8;
@@ -96,14 +116,14 @@ int main() {
             for (size_t i = 0; i < FIELD_LEN; i++) {
                 Textures animation;
                 switch (entity_types[i]) {
-                case SpriteId_None:
+                case EntityType_None:
                     animation = none;
                     break;
-                case SpriteId_Vent:
+                case EntityType_Vent:
                     animation = oil[i] > 0 ? vent : vent_stopped;
                     break;
-                case SpriteId_Tank:
-                    animation = tank;
+                case EntityType_Tank:
+                    animation = tank[MIN2(8, oil[i])];
                     break;
                 default:
                     NOB_UNREACHABLE("Unknown sprite");
@@ -117,10 +137,24 @@ int main() {
             }
 
             // OIL SYSTEM //
-            if (frame_n % fps == 0) {
-                for (size_t i = 0; i < FIELD_LEN; i++) {
-                    if (entity_types[i] == SpriteId_Vent) {
-                        oil[i] = MAX2(oil[i] - 1, 0);
+            for (size_t i = 0; i < FIELD_LEN; i++) {  // TODO: oil_next array
+                if (entity_types[i] == EntityType_Vent && frame_n % fps == 0) {
+                    oil[i] = MAX2(oil[i] - 1, 0);
+                }
+
+                if (entity_types[i] == EntityType_Tank && frame_n % 5 == 0) {
+                    if (oil[i] > 0) {
+                        int x, y;
+                        from_index(i, &x, &y);
+
+                        size_t j = to_index(x + 1, y);
+                        if (x + 1 < FIELD_W
+                            && entity_types[j] == EntityType_Vent
+                            && oil[j] <= 1)
+                        {
+                            oil[j]++;
+                            oil[i]--;
+                        }
                     }
                 }
             }
@@ -130,7 +164,6 @@ int main() {
         frame_n++;
     }
 
-    free_animation(&tank);
     CloseWindow();
     return 0;
 }
