@@ -28,6 +28,33 @@ Texture2D load_sprite(const char *path) {
     return result;
 }
 
+typedef struct {
+    Texture2D *items;
+    size_t count;
+} Textures;
+
+Textures load_animation(const char *id, size_t count) {
+    Textures result = {
+        .items = malloc(sizeof(Texture2D) * count),
+        .count = count,
+    };
+
+    for (size_t i = 0; i < count; i++) {
+        result.items[i] = load_sprite(nob_temp_sprintf("assets/sprites/%s_%02zu.png", id, i));
+    }
+
+    return result;
+}
+
+void free_animation(Textures *tex) {
+    for (size_t i = 0; i < tex->count; i++) {
+        UnloadTexture(tex->items[i]);
+    }
+    free(tex->items);
+    tex->items = NULL;
+    tex->count = 0;
+}
+
 typedef enum {
     SpriteId_None = 0,
     SpriteId_Vent,
@@ -51,15 +78,10 @@ int main() {
     Texture2D vent_00 = load_sprite("assets/sprites/vent_00.png");
     Texture2D vent_01 = load_sprite("assets/sprites/vent_01.png");
 
-    Texture2D tank[] = {
-        load_sprite("assets/sprites/tank_8_00.png"),
-        load_sprite("assets/sprites/tank_8_01.png"),
-        load_sprite("assets/sprites/tank_8_02.png"),
-        load_sprite("assets/sprites/tank_8_03.png"),
-    };
+    Textures tank = load_animation("tank_8", 4);
 
-    Texture2D nothing[] = {
-        load_sprite("assets/sprites/nothing_00.png"),
+    Texture2D none[] = {
+        load_sprite("assets/sprites/none_00.png"),
     };
 
     entity_types[to_index(3, 3)] = SpriteId_Vent;
@@ -77,7 +99,7 @@ int main() {
                 Texture2D texture;
                 switch (entity_types[i]) {
                 case SpriteId_None:
-                    texture = nothing[0];
+                    texture = none[0];
                     break;
                 case SpriteId_Vent:
                     texture = oil[i] > 0 && frame_n % fps < (fps / 2)
@@ -85,7 +107,7 @@ int main() {
                         : vent_01;
                     break;
                 case SpriteId_Tank:
-                    texture = tank[(frame_n / (fps / 4)) % 4];
+                    texture = tank.items[(frame_n / (fps / tank.count)) % tank.count];
                     break;
                 default:
                     NOB_UNREACHABLE("Unknown sprite");
@@ -111,6 +133,7 @@ int main() {
         frame_n++;
     }
 
+    free_animation(&tank);
     CloseWindow();
     return 0;
 }
