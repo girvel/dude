@@ -65,7 +65,7 @@ typedef enum {
     EntityType_None = 0,
     EntityType_Vent,
     EntityType_Tank,
-    EntityType_PipeVert,
+    EntityType_PipeUp,
     EntityType_Block0,
     EntityType_Block1,
 } EntityType;
@@ -103,7 +103,7 @@ int main() {
         load_animation("tank_7", 4),
         load_animation("tank_8", 4),
     };
-    Textures pipe_vert = load_animation("pipe_vert", 5);
+    Textures pipe_up = load_animation("pipe_up", 5);
     Textures block_0 = load_animation("block_0", 1);
     Textures block_1 = load_animation("block_1", 1);
 
@@ -111,9 +111,9 @@ int main() {
     entity_types[to_index(4, 5)] = EntityType_Vent;
     entity_types[to_index(3, 5)] = EntityType_Tank;
     entity_types[to_index(2, 5)] = EntityType_Tank;
-    entity_types[to_index(3, 6)] = EntityType_PipeVert;
-    entity_types[to_index(3, 7)] = EntityType_PipeVert;
-    entity_types[to_index(3, 8)] = EntityType_PipeVert;
+    entity_types[to_index(3, 6)] = EntityType_PipeUp;
+    entity_types[to_index(3, 7)] = EntityType_PipeUp;
+    entity_types[to_index(3, 8)] = EntityType_PipeUp;
     entity_types[to_index(10, 8)] = EntityType_Block0;
     entity_types[to_index(9, 10)] = EntityType_Block0;
     entity_types[to_index(18, 6)] = EntityType_Block1;
@@ -139,8 +139,8 @@ int main() {
                 case EntityType_Tank:
                     animation = tank[MIN2(8, oil[i])];
                     break;
-                case EntityType_PipeVert:
-                    animation = pipe_vert;
+                case EntityType_PipeUp:
+                    animation = pipe_up;
                     break;
                 case EntityType_Block0:
                     animation = block_0;
