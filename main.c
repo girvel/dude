@@ -65,6 +65,7 @@ typedef enum {
     EntityType_None = 0,
     EntityType_Vent,
     EntityType_Tank,
+    EntityType_PipeVert,
 } EntityType;
 
 EntityType entity_types[FIELD_LEN];
@@ -86,6 +87,7 @@ int main() {
     memset(entity_types, 0, FIELD_LEN * sizeof(entity_types[0]));
     memset(oil, 0, FIELD_LEN * sizeof(oil[0]));
 
+    Textures none = load_animation("none", 1);
     Textures vent = load_animation("vent", 2);
     Textures vent_stopped = load_animation("vent", 1);
     Textures tank[] = {
@@ -99,14 +101,19 @@ int main() {
         load_animation("tank_7", 4),
         load_animation("tank_8", 4),
     };
-    Textures none = load_animation("none", 1);
+    Textures pipe_vert = load_animation("pipe_vert", 1);
 
     entity_types[to_index(3, 3)] = EntityType_Vent;
     entity_types[to_index(4, 5)] = EntityType_Vent;
     entity_types[to_index(3, 5)] = EntityType_Tank;
+    entity_types[to_index(2, 5)] = EntityType_Tank;
+    entity_types[to_index(3, 6)] = EntityType_PipeVert;
+    entity_types[to_index(3, 7)] = EntityType_PipeVert;
+    entity_types[to_index(3, 8)] = EntityType_PipeVert;
 
     oil[to_index(4, 5)] = 5;
     oil[to_index(3, 5)] = 8;
+    oil[to_index(2, 5)] = 8;
 
     int frame_n = 0;
     while (!WindowShouldClose()) {
@@ -125,6 +132,9 @@ int main() {
                 case EntityType_Tank:
                     animation = tank[MIN2(8, oil[i])];
                     break;
+                case EntityType_PipeVert:
+                    animation = pipe_vert;
+                    break;
                 default:
                     NOB_UNREACHABLE("Unknown sprite");
                     break;
@@ -138,18 +148,20 @@ int main() {
 
             // OIL SYSTEM //
             for (size_t i = 0; i < FIELD_LEN; i++) {  // TODO: oil_next array
-                if (entity_types[i] == EntityType_Vent && frame_n % fps == 0) {
+                EntityType type = entity_types[i];
+                if (type == EntityType_Vent && frame_n % fps == 0) {
                     oil[i] = MAX2(oil[i] - 1, 0);
                 }
 
-                if (entity_types[i] == EntityType_Tank && frame_n % 5 == 0) {
+                if (type == EntityType_Tank && frame_n % 5 == 0) {
                     if (oil[i] > 0) {
                         int x, y;
                         from_index(i, &x, &y);
 
                         size_t j = to_index(x + 1, y);
                         if (x + 1 < FIELD_W
-                            && entity_types[j] == EntityType_Vent
+                            && (entity_types[j] == EntityType_Vent
+                                || entity_types[j] == EntityType_Tank)
                             && oil[j] <= 1)
                         {
                             oil[j]++;
