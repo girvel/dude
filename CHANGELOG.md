@@ -1,7 +1,7 @@
 ## (2) A tank
 
 - [x] Display it
-- [ ] None-sprite
+- [x] None-sprite
 - [ ] Different oil levels
 
 ## (1) A vent

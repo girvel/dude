@@ -58,6 +58,10 @@ int main() {
         load_sprite("assets/sprites/tank_8_03.png"),
     };
 
+    Texture2D nothing[] = {
+        load_sprite("assets/sprites/nothing_00.png"),
+    };
+
     entity_types[to_index(3, 3)] = SpriteId_Vent;
     entity_types[to_index(4, 5)] = SpriteId_Vent;
     entity_types[to_index(3, 5)] = SpriteId_Tank;
@@ -72,7 +76,9 @@ int main() {
             for (size_t i = 0; i < FIELD_LEN; i++) {
                 Texture2D texture;
                 switch (entity_types[i]) {
-                case SpriteId_None: continue;
+                case SpriteId_None:
+                    texture = nothing[0];
+                    break;
                 case SpriteId_Vent:
                     texture = oil[i] > 0 && frame_n % fps < (fps / 2)
                         ? vent_00
@@ -105,8 +111,6 @@ int main() {
         frame_n++;
     }
 
-    UnloadTexture(vent_00);
-    UnloadTexture(vent_01);
     CloseWindow();
     return 0;
 }
