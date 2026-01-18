@@ -16,7 +16,7 @@
     _a < _b ? _a : _b; \
 })
 
-#define FIELD_H 20
+#define FIELD_H 15
 #define FIELD_W 20
 #define FIELD_LEN (FIELD_H * FIELD_W)
 
@@ -66,6 +66,8 @@ typedef enum {
     EntityType_Vent,
     EntityType_Tank,
     EntityType_PipeVert,
+    EntityType_Block0,
+    EntityType_Block1,
 } EntityType;
 
 EntityType entity_types[FIELD_LEN];
@@ -81,7 +83,7 @@ void from_index(size_t i, int *x, int *y) {
 }
 
 int main() {
-    InitWindow(FIELD_H * total_sprite_size, FIELD_W * total_sprite_size, "Hello world");
+    InitWindow(FIELD_W * total_sprite_size, FIELD_H * total_sprite_size, "Hello world");
 
     // INITIALIZATION //
     memset(entity_types, 0, FIELD_LEN * sizeof(entity_types[0]));
@@ -102,6 +104,8 @@ int main() {
         load_animation("tank_8", 4),
     };
     Textures pipe_vert = load_animation("pipe_vert", 1);
+    Textures block_0 = load_animation("block_0", 1);
+    Textures block_1 = load_animation("block_1", 1);
 
     entity_types[to_index(3, 3)] = EntityType_Vent;
     entity_types[to_index(4, 5)] = EntityType_Vent;
@@ -110,6 +114,9 @@ int main() {
     entity_types[to_index(3, 6)] = EntityType_PipeVert;
     entity_types[to_index(3, 7)] = EntityType_PipeVert;
     entity_types[to_index(3, 8)] = EntityType_PipeVert;
+    entity_types[to_index(10, 8)] = EntityType_Block0;
+    entity_types[to_index(9, 10)] = EntityType_Block0;
+    entity_types[to_index(18, 6)] = EntityType_Block1;
 
     oil[to_index(4, 5)] = 5;
     oil[to_index(3, 5)] = 8;
@@ -135,13 +142,19 @@ int main() {
                 case EntityType_PipeVert:
                     animation = pipe_vert;
                     break;
+                case EntityType_Block0:
+                    animation = block_0;
+                    break;
+                case EntityType_Block1:
+                    animation = block_1;
+                    break;
                 default:
                     NOB_UNREACHABLE("Unknown sprite");
                     break;
                 }
 
-                int x = i % FIELD_W;
-                int y = i / FIELD_H;
+                int x, y;
+                from_index(i, &x, &y);
                 Texture2D frame = animation.items[(frame_n / animation_frames_n) % animation.count];
                 DrawTexture(frame, x * total_sprite_size, y * total_sprite_size, WHITE);
             }
