@@ -1,5 +1,7 @@
 #include <raylib.h>
+#include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 #include "nob.h"
 
@@ -113,6 +115,7 @@ void put_pump(int x, int y) {
 }
 
 int main() {
+    srand(time(NULL));
     InitWindow(FIELD_W * total_sprite_size, FIELD_H * total_sprite_size, "Hello world");
 
     // INITIALIZATION //
@@ -140,6 +143,14 @@ int main() {
     Textures block_0 = load_animation("block_0", 1);
     Textures block_1 = load_animation("block_1", 1);
 
+    for (size_t _ = rand() % 5 + 4; _ > 0; _--) {
+        entity_types[rand() % FIELD_LEN] = EntityType_Block0;
+    }
+
+    for (size_t _ = rand() % 5 + 4; _ > 0; _--) {
+        entity_types[rand() % FIELD_LEN] = EntityType_Block1;
+    }
+
     put_vent(3, 3);
     put_vent(4, 5);
     put_tank(3, 5);
@@ -162,8 +173,6 @@ int main() {
     put_pump(10, 4);
     put_pump(11, 4);
 
-    entity_types[to_index(10, 8)] = EntityType_Block0;
-    entity_types[to_index(9, 10)] = EntityType_Block0;
     entity_types[to_index(18, 6)] = EntityType_Block1;
 
     int frame_n = 0;
