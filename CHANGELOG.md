@@ -2,4 +2,4 @@
 
 - [x] Display vent
 - [x] Animate vent
-- [ ] Scale vent
+- [x] Scale vent
