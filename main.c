@@ -72,6 +72,7 @@ typedef enum {
 
 EntityType entity_types[FIELD_LEN];
 int oil[FIELD_LEN];
+int oil_limit[FIELD_LEN];
 
 size_t to_index(size_t x, size_t y) {
     return y * FIELD_W + x;
@@ -88,6 +89,7 @@ int main() {
     // INITIALIZATION //
     memset(entity_types, 0, FIELD_LEN * sizeof(entity_types[0]));
     memset(oil, 0, FIELD_LEN * sizeof(oil[0]));
+    memset(oil_limit, 0, FIELD_LEN * sizeof(oil_limit[0]));
 
     Textures none = load_animation("none", 1);
     Textures vent = load_animation("vent", 2);
@@ -104,6 +106,7 @@ int main() {
         load_animation("tank_8", 4),
     };
     Textures pipe_up = load_animation("pipe_up", 5);
+    Textures pipe_up_stopped = load_animation("pipe_up", 1);
     Textures block_0 = load_animation("block_0", 1);
     Textures block_1 = load_animation("block_1", 1);
 
@@ -121,6 +124,15 @@ int main() {
     oil[to_index(4, 5)] = 5;
     oil[to_index(3, 5)] = 8;
     oil[to_index(2, 5)] = 8;
+    oil[to_index(3, 8)] = 1;
+
+    oil_limit[to_index(3, 3)] = 1;
+    oil_limit[to_index(4, 5)] = 1;
+    oil_limit[to_index(3, 5)] = 8;
+    oil_limit[to_index(2, 5)] = 8;
+    oil_limit[to_index(3, 6)] = 1;
+    oil_limit[to_index(3, 7)] = 1;
+    oil_limit[to_index(3, 8)] = 1;
 
     int frame_n = 0;
     while (!WindowShouldClose()) {
@@ -140,7 +152,7 @@ int main() {
                     animation = tank[MIN2(8, oil[i])];
                     break;
                 case EntityType_PipeUp:
-                    animation = pipe_up;
+                    animation = oil[i] > 0 ? pipe_up : pipe_up_stopped;
                     break;
                 case EntityType_Block0:
                     animation = block_0;
@@ -165,8 +177,7 @@ int main() {
                 if (type == EntityType_Vent && frame_n % fps == 0) {
                     oil[i] = MAX2(oil[i] - 1, 0);
                 }
-
-                if (type == EntityType_Tank && frame_n % 5 == 0) {
+                else if (type == EntityType_Tank && frame_n % 5 == 0) {
                     if (oil[i] > 0) {
                         int x, y;
                         from_index(i, &x, &y);
@@ -179,6 +190,21 @@ int main() {
                         {
                             oil[j]++;
                             oil[i]--;
+                        }
+                    }
+                }
+                else if (type == EntityType_PipeUp && frame_n % 5 == 0) {
+                    if (oil[i] > 0) {
+                        int x, y;
+                        from_index(i, &x, &y);
+
+                        size_t j = to_index(x, y - 1);
+                        if (y - 1 >= 0
+                            && entity_types[j] != EntityType_None
+                            && oil[j] + 1 <= oil_limit[j])
+                        {
+                            oil[i]--;
+                            oil[j]++;
                         }
                     }
                 }
