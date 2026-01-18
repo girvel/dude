@@ -143,37 +143,36 @@ int main() {
     Textures block_0 = load_animation("block_0", 1);
     Textures block_1 = load_animation("block_1", 1);
 
-    for (size_t _ = rand() % 5 + 4; _ > 0; _--) {
+    for (int _ = rand() % 5 + 4; _ > 0; _--) {
         entity_types[rand() % FIELD_LEN] = EntityType_Block0;
     }
 
-    for (size_t _ = rand() % 5 + 4; _ > 0; _--) {
+    for (int _ = rand() % 5 + 4; _ > 0; _--) {
         entity_types[rand() % FIELD_LEN] = EntityType_Block1;
     }
 
-    put_vent(3, 3);
-    put_vent(4, 5);
-    put_tank(3, 5);
-    put_tank(2, 5);
-    put_pipe_up(3, 6);
-    put_pipe_up(3, 7);
-    put_pipe_up(3, 8);
-    put_pipe_up(3, 9);
-    put_pipe_up(3, 10);
-    put_pump(3, 11);
+    const int padding = 2;
+    for (int _ = rand() % 2 + 2; _ > 0; _--) {
+        int pipe_lengths[4];
+        int tanks_n = rand() % 4;
+        int pipe_max_length = 0;
+        for (int i = 0; i < tanks_n; i++) {
+            pipe_lengths[i] = rand() % 5 + 1;
+            pipe_max_length = MAX2(pipe_lengths[i], pipe_max_length);
+        }
 
-    put_tank(9, 2);
-    put_tank(10, 2);
-    put_tank(11, 2);
-    put_vent(12, 2);
-    put_pipe_up(9, 3);
-    put_pipe_up(10, 3);
-    put_pipe_up(11, 3);
-    put_pump(9, 4);
-    put_pump(10, 4);
-    put_pump(11, 4);
+        int x = padding + rand() % (FIELD_H - 2 * padding - tanks_n - 1);
+        int y = padding + rand() % (FIELD_W - 2 * padding - pipe_max_length - 2);
 
-    entity_types[to_index(18, 6)] = EntityType_Block1;
+        for (int i = 0; i < tanks_n; i++) {
+            put_tank(x + i, y);
+            for (int j = 0; j < pipe_lengths[i]; j++) {
+                put_pipe_up(x + i, y + 1 + j);
+            }
+            put_pump(x + i, y + 1 + pipe_lengths[i]);
+        }
+        put_vent(x + tanks_n, y);
+    }
 
     int frame_n = 0;
     while (!WindowShouldClose()) {
