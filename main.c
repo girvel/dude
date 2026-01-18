@@ -117,6 +117,8 @@ int main() {
     entity_types[to_index(3, 6)] = EntityType_PipeUp;
     entity_types[to_index(3, 7)] = EntityType_PipeUp;
     entity_types[to_index(3, 8)] = EntityType_PipeUp;
+    entity_types[to_index(3, 9)] = EntityType_PipeUp;
+    entity_types[to_index(3, 10)] = EntityType_PipeUp;
     entity_types[to_index(10, 8)] = EntityType_Block0;
     entity_types[to_index(9, 10)] = EntityType_Block0;
     entity_types[to_index(18, 6)] = EntityType_Block1;
@@ -124,7 +126,7 @@ int main() {
     oil[to_index(4, 5)] = 5;
     oil[to_index(3, 5)] = 8;
     oil[to_index(2, 5)] = 8;
-    oil[to_index(3, 8)] = 1;
+    oil[to_index(3, 10)] = 1;
 
     oil_limit[to_index(3, 3)] = 1;
     oil_limit[to_index(4, 5)] = 1;
@@ -133,6 +135,8 @@ int main() {
     oil_limit[to_index(3, 6)] = 1;
     oil_limit[to_index(3, 7)] = 1;
     oil_limit[to_index(3, 8)] = 1;
+    oil_limit[to_index(3, 9)] = 1;
+    oil_limit[to_index(3, 10)] = 1;
 
     int frame_n = 0;
     while (!WindowShouldClose()) {
@@ -172,13 +176,19 @@ int main() {
             }
 
             // OIL SYSTEM //
-            for (size_t i = 0; i < FIELD_LEN; i++) {  // TODO: oil_next array
-                EntityType type = entity_types[i];
-                if (type == EntityType_Vent && frame_n % fps == 0) {
-                    oil[i] = MAX2(oil[i] - 1, 0);
-                }
-                else if (type == EntityType_Tank && frame_n % 5 == 0) {
-                    if (oil[i] > 0) {
+            int oil_next[FIELD_LEN];
+            memcpy(oil_next, oil, FIELD_LEN * sizeof(int));
+
+            for (size_t i = 0; i < FIELD_LEN; i++) {
+                switch(entity_types[i]) {
+                case EntityType_Vent:
+                    if (frame_n % fps == 0) {
+                        oil_next[i] = MAX2(oil[i] - 1, 0);
+                    }
+                    break;
+
+                case EntityType_Tank:
+                    if (frame_n % 5 == 0 && oil[i] > 0) {
                         int x, y;
                         from_index(i, &x, &y);
 
@@ -188,13 +198,13 @@ int main() {
                                 || entity_types[j] == EntityType_Tank)
                             && oil[j] <= 1)
                         {
-                            oil[j]++;
-                            oil[i]--;
+                            oil_next[j]++;
+                            oil_next[i]--;
                         }
                     }
-                }
-                else if (type == EntityType_PipeUp && frame_n % 5 == 0) {
-                    if (oil[i] > 0) {
+
+                case EntityType_PipeUp:
+                    if (frame_n % fps == 0 && oil[i] > 0) {
                         int x, y;
                         from_index(i, &x, &y);
 
@@ -203,12 +213,18 @@ int main() {
                             && entity_types[j] != EntityType_None
                             && oil[j] + 1 <= oil_limit[j])
                         {
-                            oil[i]--;
-                            oil[j]++;
+                            oil_next[i]--;
+                            oil_next[j]++;
                         }
                     }
+                    break;
+
+                default:
+                    break;
                 }
             }
+
+            memcpy(oil, oil_next, FIELD_LEN * sizeof(int));
         EndDrawing();
 
         usleep(1000000 / fps);
