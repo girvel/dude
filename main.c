@@ -151,6 +151,17 @@ int main() {
     put_pipe_up(3, 10);
     put_pump(3, 11);
 
+    put_tank(9, 2);
+    put_tank(10, 2);
+    put_tank(11, 2);
+    put_vent(12, 2);
+    put_pipe_up(9, 3);
+    put_pipe_up(10, 3);
+    put_pipe_up(11, 3);
+    put_pump(9, 4);
+    put_pump(10, 4);
+    put_pump(11, 4);
+
     entity_types[to_index(10, 8)] = EntityType_Block0;
     entity_types[to_index(9, 10)] = EntityType_Block0;
     entity_types[to_index(18, 6)] = EntityType_Block1;
