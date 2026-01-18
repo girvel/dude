@@ -66,6 +66,7 @@ typedef enum {
     EntityType_Vent,
     EntityType_Tank,
     EntityType_PipeUp,
+    EntityType_Pump,
     EntityType_Block0,
     EntityType_Block1,
 } EntityType;
@@ -104,6 +105,13 @@ void put_pipe_up(int x, int y) {
     oil_limit[i] = 1;
 }
 
+void put_pump(int x, int y) {
+    size_t i = to_index(x, y);
+    entity_types[i] = EntityType_Pump;
+    oil[i] = 0;
+    oil_limit[i] = 0;
+}
+
 int main() {
     InitWindow(FIELD_W * total_sprite_size, FIELD_H * total_sprite_size, "Hello world");
 
@@ -128,6 +136,7 @@ int main() {
     };
     Textures pipe_up = load_animation("pipe_up", 5);
     Textures pipe_up_stopped = load_animation("pipe_up", 1);
+    Textures pump = load_animation("pump", 1);
     Textures block_0 = load_animation("block_0", 1);
     Textures block_1 = load_animation("block_1", 1);
 
@@ -140,11 +149,11 @@ int main() {
     put_pipe_up(3, 8);
     put_pipe_up(3, 9);
     put_pipe_up(3, 10);
+    put_pump(3, 11);
 
     entity_types[to_index(10, 8)] = EntityType_Block0;
     entity_types[to_index(9, 10)] = EntityType_Block0;
     entity_types[to_index(18, 6)] = EntityType_Block1;
-    oil[to_index(3, 10)] = 1;
 
     int frame_n = 0;
     while (!WindowShouldClose()) {
@@ -165,6 +174,9 @@ int main() {
                     break;
                 case EntityType_PipeUp:
                     animation = oil[i] > 0 ? pipe_up : pipe_up_stopped;
+                    break;
+                case EntityType_Pump:
+                    animation = pump;
                     break;
                 case EntityType_Block0:
                     animation = block_0;
@@ -188,18 +200,18 @@ int main() {
             memcpy(oil_next, oil, FIELD_LEN * sizeof(int));
 
             for (size_t i = 0; i < FIELD_LEN; i++) {
+                int x, y;
+                from_index(i, &x, &y);
+
                 switch(entity_types[i]) {
                 case EntityType_Vent:
-                    if (frame_n % (2 * fps) == 0) {
+                    if (frame_n % fps == 0) {
                         oil_next[i] = MAX2(oil[i] - 1, 0);
                     }
                     break;
 
                 case EntityType_Tank:
                     if (frame_n % 5 == 0 && oil[i] > 0) {
-                        int x, y;
-                        from_index(i, &x, &y);
-
                         size_t j = to_index(x + 1, y);
                         if (x + 1 < FIELD_W
                             && (entity_types[j] == EntityType_Vent
@@ -213,9 +225,6 @@ int main() {
 
                 case EntityType_PipeUp:
                     if (frame_n % fps == 0 && oil[i] > 0) {
-                        int x, y;
-                        from_index(i, &x, &y);
-
                         size_t j = to_index(x, y - 1);
                         if (y - 1 >= 0
                             && entity_types[j] != EntityType_None
@@ -226,6 +235,14 @@ int main() {
                         }
                     }
                     break;
+
+                case EntityType_Pump: {
+                    size_t j = to_index(x, y - 1);
+                    if (frame_n % (3 * fps) == 0 && oil[j] == 0) {
+                        oil_next[i]--;
+                        oil_next[j]++;
+                    }
+                    } break;
 
                 default:
                     break;
