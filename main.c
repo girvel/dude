@@ -16,6 +16,7 @@
 #define FIELD_LEN (FIELD_H * FIELD_W)
 
 const int fps = 25;
+const int animation_frames_n = 5;
 const int scale = 4;
 const int source_sprite_size = 16;
 const int total_sprite_size = scale * source_sprite_size;
@@ -75,20 +76,17 @@ int main() {
     memset(entity_types, 0, FIELD_LEN * sizeof(entity_types[0]));
     memset(oil, 0, FIELD_LEN * sizeof(oil[0]));
 
-    Texture2D vent_00 = load_sprite("assets/sprites/vent_00.png");
-    Texture2D vent_01 = load_sprite("assets/sprites/vent_01.png");
-
+    Textures vent = load_animation("vent", 2);
+    Textures vent_stopped = load_animation("vent", 1);
     Textures tank = load_animation("tank_8", 4);
-
-    Texture2D none[] = {
-        load_sprite("assets/sprites/none_00.png"),
-    };
+    Textures none = load_animation("none", 1);
 
     entity_types[to_index(3, 3)] = SpriteId_Vent;
     entity_types[to_index(4, 5)] = SpriteId_Vent;
     entity_types[to_index(3, 5)] = SpriteId_Tank;
 
-    oil[to_index(1, 1)] = 5;
+    oil[to_index(4, 5)] = 5;
+    oil[to_index(3, 5)] = 8;
 
     int frame_n = 0;
     while (!WindowShouldClose()) {
@@ -96,18 +94,16 @@ int main() {
             // DRAW SYSTEM //
             ClearBackground(WHITE);
             for (size_t i = 0; i < FIELD_LEN; i++) {
-                Texture2D texture;
+                Textures animation;
                 switch (entity_types[i]) {
                 case SpriteId_None:
-                    texture = none[0];
+                    animation = none;
                     break;
                 case SpriteId_Vent:
-                    texture = oil[i] > 0 && frame_n % fps < (fps / 2)
-                        ? vent_00
-                        : vent_01;
+                    animation = oil[i] > 0 ? vent : vent_stopped;
                     break;
                 case SpriteId_Tank:
-                    texture = tank.items[(frame_n / (fps / tank.count)) % tank.count];
+                    animation = tank;
                     break;
                 default:
                     NOB_UNREACHABLE("Unknown sprite");
@@ -116,7 +112,8 @@ int main() {
 
                 int x = i % FIELD_W;
                 int y = i / FIELD_H;
-                DrawTexture(texture, x * total_sprite_size, y * total_sprite_size, WHITE);
+                Texture2D frame = animation.items[(frame_n / animation_frames_n) % animation.count];
+                DrawTexture(frame, x * total_sprite_size, y * total_sprite_size, WHITE);
             }
 
             // OIL SYSTEM //
