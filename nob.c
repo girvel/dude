@@ -22,7 +22,7 @@ int main(int argc, char **argv) {
     if (!nob_cmd_run(&cmd)) return 1;
 
     nob_cc(&cmd);
-    nob_cc_inputs(&cmd, ".build/nob.o", ".build/main.o");
-    nob_cc_output(&cmd, ".build/dude");
+    nob_cc_inputs(&cmd, ".build/nob.o", ".build/main.o", "-lraylib", "-lm");
+    nob_cc_output(&cmd, "dude");
     if (!nob_cmd_run(&cmd)) return 1;
 }
