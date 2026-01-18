@@ -83,6 +83,27 @@ void from_index(size_t i, int *x, int *y) {
     *y = i / FIELD_W;
 }
 
+void put_vent(int x, int y) {
+    size_t i = to_index(x, y);
+    entity_types[i] = EntityType_Vent;
+    oil[i] = 2;
+    oil_limit[i] = 2;
+}
+
+void put_tank(int x, int y) {
+    size_t i = to_index(x, y);
+    entity_types[i] = EntityType_Tank;
+    oil[i] = 8;
+    oil_limit[i] = 8;
+}
+
+void put_pipe_up(int x, int y) {
+    size_t i = to_index(x, y);
+    entity_types[i] = EntityType_PipeUp;
+    oil[i] = 0;
+    oil_limit[i] = 1;
+}
+
 int main() {
     InitWindow(FIELD_W * total_sprite_size, FIELD_H * total_sprite_size, "Hello world");
 
@@ -110,33 +131,20 @@ int main() {
     Textures block_0 = load_animation("block_0", 1);
     Textures block_1 = load_animation("block_1", 1);
 
-    entity_types[to_index(3, 3)] = EntityType_Vent;
-    entity_types[to_index(4, 5)] = EntityType_Vent;
-    entity_types[to_index(3, 5)] = EntityType_Tank;
-    entity_types[to_index(2, 5)] = EntityType_Tank;
-    entity_types[to_index(3, 6)] = EntityType_PipeUp;
-    entity_types[to_index(3, 7)] = EntityType_PipeUp;
-    entity_types[to_index(3, 8)] = EntityType_PipeUp;
-    entity_types[to_index(3, 9)] = EntityType_PipeUp;
-    entity_types[to_index(3, 10)] = EntityType_PipeUp;
+    put_vent(3, 3);
+    put_vent(4, 5);
+    put_tank(3, 5);
+    put_tank(2, 5);
+    put_pipe_up(3, 6);
+    put_pipe_up(3, 7);
+    put_pipe_up(3, 8);
+    put_pipe_up(3, 9);
+    put_pipe_up(3, 10);
+
     entity_types[to_index(10, 8)] = EntityType_Block0;
     entity_types[to_index(9, 10)] = EntityType_Block0;
     entity_types[to_index(18, 6)] = EntityType_Block1;
-
-    oil[to_index(4, 5)] = 5;
-    oil[to_index(3, 5)] = 8;
-    oil[to_index(2, 5)] = 8;
     oil[to_index(3, 10)] = 1;
-
-    oil_limit[to_index(3, 3)] = 1;
-    oil_limit[to_index(4, 5)] = 1;
-    oil_limit[to_index(3, 5)] = 8;
-    oil_limit[to_index(2, 5)] = 8;
-    oil_limit[to_index(3, 6)] = 1;
-    oil_limit[to_index(3, 7)] = 1;
-    oil_limit[to_index(3, 8)] = 1;
-    oil_limit[to_index(3, 9)] = 1;
-    oil_limit[to_index(3, 10)] = 1;
 
     int frame_n = 0;
     while (!WindowShouldClose()) {
@@ -182,7 +190,7 @@ int main() {
             for (size_t i = 0; i < FIELD_LEN; i++) {
                 switch(entity_types[i]) {
                 case EntityType_Vent:
-                    if (frame_n % fps == 0) {
+                    if (frame_n % (2 * fps) == 0) {
                         oil_next[i] = MAX2(oil[i] - 1, 0);
                     }
                     break;
