@@ -1,3 +1,4 @@
+#include <math.h>
 #include <raylib.h>
 #include <string.h>
 #include <unistd.h>
@@ -30,6 +31,7 @@ Texture2D load_sprite(const char *path) {
 typedef enum {
     SpriteId_None = 0,
     SpriteId_Vent,
+    SpriteId_Tank,
 } EntityType;
 
 EntityType entity_types[FIELD_LEN];
@@ -48,8 +50,17 @@ int main() {
 
     Texture2D vent_00 = load_sprite("assets/sprites/vent_00.png");
     Texture2D vent_01 = load_sprite("assets/sprites/vent_01.png");
-    entity_types[to_index(0, 0)] = SpriteId_Vent;
-    entity_types[to_index(1, 1)] = SpriteId_Vent;
+
+    Texture2D tank[] = {
+        load_sprite("assets/sprites/tank_8_00.png"),
+        load_sprite("assets/sprites/tank_8_01.png"),
+        load_sprite("assets/sprites/tank_8_02.png"),
+        load_sprite("assets/sprites/tank_8_03.png"),
+    };
+
+    entity_types[to_index(3, 3)] = SpriteId_Vent;
+    entity_types[to_index(4, 5)] = SpriteId_Vent;
+    entity_types[to_index(3, 5)] = SpriteId_Tank;
 
     oil[to_index(1, 1)] = 5;
 
@@ -66,6 +77,9 @@ int main() {
                     texture = oil[i] > 0 && frame_n % fps < (fps / 2)
                         ? vent_00
                         : vent_01;
+                    break;
+                case SpriteId_Tank:
+                    texture = tank[(frame_n / (fps / 4)) % 4];
                     break;
                 default:
                     NOB_UNREACHABLE("Unknown sprite");
