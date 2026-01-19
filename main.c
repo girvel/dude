@@ -65,10 +65,12 @@ typedef enum {
     EntityType_Block1,
 } EntityType;
 
+struct {
+    EntityType type[FIELD_LEN];
+    int oil[FIELD_LEN];
+    int oil_limit[FIELD_LEN];
+} field;
 // SoA optimization for (theoretically) CPU caching
-EntityType entity_types[FIELD_LEN];
-int oil[FIELD_LEN];
-int oil_limit[FIELD_LEN];
 
 static inline size_t to_index(size_t x, size_t y) {
     assert(x < FIELD_W && y < FIELD_H && "Indexing out of game field bounds");
@@ -82,30 +84,30 @@ static inline void from_index(size_t i, int *x, int *y) {
 
 void put_vent(int x, int y) {
     size_t i = to_index(x, y);
-    entity_types[i] = EntityType_Vent;
-    oil[i] = 2;
-    oil_limit[i] = 2;
+    field.type[i] = EntityType_Vent;
+    field.oil[i] = 2;
+    field.oil_limit[i] = 2;
 }
 
 void put_tank(int x, int y) {
     size_t i = to_index(x, y);
-    entity_types[i] = EntityType_Tank;
-    oil[i] = 8;
-    oil_limit[i] = 8;
+    field.type[i] = EntityType_Tank;
+    field.oil[i] = 8;
+    field.oil_limit[i] = 8;
 }
 
 void put_pipe_up(int x, int y) {
     size_t i = to_index(x, y);
-    entity_types[i] = EntityType_PipeUp;
-    oil[i] = 0;
-    oil_limit[i] = 1;
+    field.type[i] = EntityType_PipeUp;
+    field.oil[i] = 0;
+    field.oil_limit[i] = 1;
 }
 
 void put_pump(int x, int y) {
     size_t i = to_index(x, y);
-    entity_types[i] = EntityType_Pump;
-    oil[i] = 0;
-    oil_limit[i] = 0;
+    field.type[i] = EntityType_Pump;
+    field.oil[i] = 0;
+    field.oil_limit[i] = 0;
 }
 
 int main() {
@@ -114,9 +116,9 @@ int main() {
     SetTargetFPS(fps);
 
     // INITIALIZATION //
-    memset(entity_types, 0, FIELD_LEN * sizeof(entity_types[0]));
-    memset(oil, 0, FIELD_LEN * sizeof(oil[0]));
-    memset(oil_limit, 0, FIELD_LEN * sizeof(oil_limit[0]));
+    memset(field.type, 0, FIELD_LEN * sizeof(field.type[0]));
+    memset(field.oil, 0, FIELD_LEN * sizeof(field.oil[0]));
+    memset(field.oil_limit, 0, FIELD_LEN * sizeof(field.oil_limit[0]));
 
     Textures none = load_animation("none", 1);
     Textures vent = load_animation("vent", 2);
@@ -139,11 +141,11 @@ int main() {
     Textures block_1 = load_animation("block_1", 1);
 
     for (int _ = rand() % 5 + 4; _ > 0; _--) {
-        entity_types[rand() % FIELD_LEN] = EntityType_Block0;
+        field.type[rand() % FIELD_LEN] = EntityType_Block0;
     }
 
     for (int _ = rand() % 5 + 4; _ > 0; _--) {
-        entity_types[rand() % FIELD_LEN] = EntityType_Block1;
+        field.type[rand() % FIELD_LEN] = EntityType_Block1;
     }
 
     const int padding = 2;
@@ -176,18 +178,18 @@ int main() {
             ClearBackground(WHITE);
             for (size_t i = 0; i < FIELD_LEN; i++) {
                 Textures animation;
-                switch (entity_types[i]) {
+                switch (field.type[i]) {
                 case EntityType_None:
                     animation = none;
                     break;
                 case EntityType_Vent:
-                    animation = oil[i] > 0 ? vent : vent_stopped;
+                    animation = field.oil[i] > 0 ? vent : vent_stopped;
                     break;
                 case EntityType_Tank:
-                    animation = tank[min_int(8, oil[i])];
+                    animation = tank[min_int(8, field.oil[i])];
                     break;
                 case EntityType_PipeUp:
-                    animation = oil[i] > 0 ? pipe_up : pipe_up_stopped;
+                    animation = field.oil[i] > 0 ? pipe_up : pipe_up_stopped;
                     break;
                 case EntityType_Pump:
                     animation = pump;
@@ -211,26 +213,26 @@ int main() {
 
             // OIL SYSTEM //
             int oil_next[FIELD_LEN];
-            memcpy(oil_next, oil, FIELD_LEN * sizeof(int));
+            memcpy(oil_next, field.oil, FIELD_LEN * sizeof(int));
 
             for (size_t i = 0; i < FIELD_LEN; i++) {
                 int x, y;
                 from_index(i, &x, &y);
 
-                switch(entity_types[i]) {
+                switch(field.type[i]) {
                 case EntityType_Vent:
                     if (frame_n % fps == 0) {
-                        oil_next[i] = max_int(oil[i] - 1, 0);
+                        oil_next[i] = max_int(field.oil[i] - 1, 0);
                     }
                     break;
 
                 case EntityType_Tank:
-                    if (frame_n % 5 == 0 && oil[i] > 0) {
+                    if (frame_n % 5 == 0 && field.oil[i] > 0) {
                         size_t j = to_index(x + 1, y);
                         if (x + 1 < FIELD_W
-                            && (entity_types[j] == EntityType_Vent
-                                || entity_types[j] == EntityType_Tank)
-                            && oil[j] <= 1)
+                            && (field.type[j] == EntityType_Vent
+                                || field.type[j] == EntityType_Tank)
+                            && field.oil[j] <= 1)
                         {
                             oil_next[j]++;
                             oil_next[i]--;
@@ -239,11 +241,11 @@ int main() {
                     break;
 
                 case EntityType_PipeUp:
-                    if (frame_n % fps == 0 && oil[i] > 0) {
+                    if (frame_n % fps == 0 && field.oil[i] > 0) {
                         size_t j = to_index(x, y - 1);
                         if (y - 1 >= 0
-                            && entity_types[j] != EntityType_None
-                            && oil[j] + 1 <= oil_limit[j])
+                            && field.type[j] != EntityType_None
+                            && field.oil[j] + 1 <= field.oil_limit[j])
                         {
                             oil_next[i]--;
                             oil_next[j]++;
@@ -253,7 +255,7 @@ int main() {
 
                 case EntityType_Pump: {
                     size_t j = to_index(x, y - 1);
-                    if (frame_n % (3 * fps) == 0 && oil[j] == 0) {
+                    if (frame_n % (3 * fps) == 0 && field.oil[j] == 0) {
                         oil_next[j]++;
                     }
                     } break;
@@ -263,7 +265,7 @@ int main() {
                 }
             }
 
-            memcpy(oil, oil_next, FIELD_LEN * sizeof(int));
+            memcpy(field.oil, oil_next, FIELD_LEN * sizeof(int));
         EndDrawing();
         frame_n++;
     }
