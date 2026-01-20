@@ -139,6 +139,7 @@ int main() {
     Textures pump = load_animation("pump", 1);
     Textures block_0 = load_animation("block_0", 1);
     Textures block_1 = load_animation("block_1", 1);
+    Texture2D gui = load_sprite("assets/sprites/gui.png");
 
     for (int _ = rand() % 5 + 4; _ > 0; _--) {
         field.type[rand() % FIELD_LEN] = EntityType_Block0;
@@ -211,6 +212,13 @@ int main() {
                 DrawTexture(frame, x * total_sprite_size, y * total_sprite_size, WHITE);
             }
 
+            // DRAW GUI SYSTEM
+            
+            const int gui_x = FIELD_W * total_sprite_size - gui.width;
+            const int padding = scale * 3;
+            DrawTexture(gui, gui_x, 0, WHITE);
+            DrawText(nob_temp_sprintf("Oil: %03d", 0), gui_x + padding, padding, 6 * scale, BLACK);
+
             // OIL SYSTEM //
             int oil_next[FIELD_LEN];
             memcpy(oil_next, field.oil, FIELD_LEN * sizeof(int));
@@ -279,6 +287,7 @@ int main() {
     free_animation(&pump);
     free_animation(&block_0);
     free_animation(&block_1);
+    UnloadTexture(gui);
 
     CloseWindow();
     return 0;
