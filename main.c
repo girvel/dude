@@ -3,84 +3,13 @@
 #include <string.h>
 #include <time.h>
 #include "nob.h"
+#include "src/field.h"
+#include "src/systems/display_grid.h"
+#include "src/modern.h"
 
 
-static inline int max_int(int a, int b) { return a > b ? a : b; }
-static inline int min_int(int a, int b) { return a < b ? a : b; }
-
-#define FIELD_H 15
-#define FIELD_W 20
-#define FIELD_LEN (FIELD_H * FIELD_W)
-
-const int fps = 25;
-const int animation_frames_n = 5;
-const int scale = 4;
-const int source_sprite_size = 16;
-const int total_sprite_size = scale * source_sprite_size;
-
-Texture2D load_sprite(const char *path) {
-    Image img = LoadImage(path);
-    ImageResizeNN(&img, img.width * scale, img.height * scale);
-    Texture2D result = LoadTextureFromImage(img);
-    UnloadImage(img);
-    return result;
-}
-
-typedef struct {
-    Texture2D *items;
-    size_t count;
-} Textures;
-
-Textures load_animation(const char *id, size_t count) {
-    Textures result = {
-        .items = malloc(sizeof(Texture2D) * count),
-        .count = count,
-    };
-
-    assert(result.items != NULL && "Get more RAM lol");
-
-    for (size_t i = 0; i < count; i++) {
-        result.items[i] = load_sprite(nob_temp_sprintf("assets/sprites/%s_%02zu.png", id, i));
-    }
-
-    return result;
-}
-
-void free_animation(Textures *tex) {
-    for (size_t i = 0; i < tex->count; i++) {
-        UnloadTexture(tex->items[i]);
-    }
-    free(tex->items);
-    tex->items = NULL;
-    tex->count = 0;
-}
-
-typedef enum {
-    EntityType_None = 0,
-    EntityType_Vent,
-    EntityType_Tank,
-    EntityType_PipeUp,
-    EntityType_Pump,
-    EntityType_Block0,
-    EntityType_Block1,
-} EntityType;
-
-struct {
-    EntityType type[FIELD_LEN];
-    int oil[FIELD_LEN];
-    int oil_limit[FIELD_LEN];
-} field;
+Field field;
 // SoA optimization for (theoretically) CPU caching
-
-static inline size_t to_index(size_t x, size_t y) {
-    assert(x < FIELD_W && y < FIELD_H && "Indexing out of game field bounds");
-    return y * FIELD_W + x;
-}
-
-static inline void from_index(size_t i, int *x, int *y) {
-    *x = i % FIELD_W;
-    *y = i / FIELD_W;
-}
 
 void put_vent(int x, int y) {
     size_t i = to_index(x, y);
@@ -119,27 +48,7 @@ int main() {
     memset(field.type, 0, FIELD_LEN * sizeof(field.type[0]));
     memset(field.oil, 0, FIELD_LEN * sizeof(field.oil[0]));
     memset(field.oil_limit, 0, FIELD_LEN * sizeof(field.oil_limit[0]));
-
-    Textures none = load_animation("none", 1);
-    Textures vent = load_animation("vent", 2);
-    Textures vent_stopped = load_animation("vent", 1);
-    Textures tank[] = {
-        load_animation("tank_0", 4),
-        load_animation("tank_1", 4),
-        load_animation("tank_2", 4),
-        load_animation("tank_3", 4),
-        load_animation("tank_4", 4),
-        load_animation("tank_5", 4),
-        load_animation("tank_6", 4),
-        load_animation("tank_7", 4),
-        load_animation("tank_8", 4),
-    };
-    Textures pipe_up = load_animation("pipe_up", 5);
-    Textures pipe_up_stopped = load_animation("pipe_up", 1);
-    Textures pump = load_animation("pump", 1);
-    Textures block_0 = load_animation("block_0", 1);
-    Textures block_1 = load_animation("block_1", 1);
-    Texture2D gui = load_sprite("assets/sprites/gui.png");
+    display_grid_init();
 
     for (int _ = rand() % 5 + 4; _ > 0; _--) {
         field.type[rand() % FIELD_LEN] = EntityType_Block0;
@@ -175,49 +84,8 @@ int main() {
     int frame_n = 0;
     while (!WindowShouldClose()) {
         BeginDrawing();
-            // DRAW SYSTEM //
             ClearBackground(WHITE);
-            for (size_t i = 0; i < FIELD_LEN; i++) {
-                Textures animation;
-                switch (field.type[i]) {
-                case EntityType_None:
-                    animation = none;
-                    break;
-                case EntityType_Vent:
-                    animation = field.oil[i] > 0 ? vent : vent_stopped;
-                    break;
-                case EntityType_Tank:
-                    animation = tank[min_int(8, field.oil[i])];
-                    break;
-                case EntityType_PipeUp:
-                    animation = field.oil[i] > 0 ? pipe_up : pipe_up_stopped;
-                    break;
-                case EntityType_Pump:
-                    animation = pump;
-                    break;
-                case EntityType_Block0:
-                    animation = block_0;
-                    break;
-                case EntityType_Block1:
-                    animation = block_1;
-                    break;
-                default:
-                    NOB_UNREACHABLE("Unknown sprite");
-                    break;
-                }
-
-                int x, y;
-                from_index(i, &x, &y);
-                Texture2D frame = animation.items[(frame_n / animation_frames_n) % animation.count];
-                DrawTexture(frame, x * total_sprite_size, y * total_sprite_size, WHITE);
-            }
-
-            // DRAW GUI SYSTEM
-            
-            const int gui_x = FIELD_W * total_sprite_size - gui.width;
-            const int padding = scale * 3;
-            DrawTexture(gui, gui_x, 0, WHITE);
-            DrawText(nob_temp_sprintf("Oil: %03d", 0), gui_x + padding, padding, 6 * scale, BLACK);
+            display_grid(&field, frame_n);
 
             // OIL SYSTEM //
             int oil_next[FIELD_LEN];
@@ -278,17 +146,7 @@ int main() {
         frame_n++;
     }
 
-    free_animation(&none);
-    free_animation(&vent);
-    free_animation(&vent_stopped);
-    for (size_t i = 0; i < 9; i++) free_animation(&tank[i]);
-    free_animation(&pipe_up);
-    free_animation(&pipe_up_stopped);
-    free_animation(&pump);
-    free_animation(&block_0);
-    free_animation(&block_1);
-    UnloadTexture(gui);
-
+    display_grid_deinit();
     CloseWindow();
     return 0;
 }

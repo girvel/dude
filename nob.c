@@ -14,6 +14,16 @@ int main(int argc, char **argv) {
     nob_cc_output(&cmd, ".build/main.o");
     if (!nob_cmd_run(&cmd)) return 1;
 
+    if (!nob_mkdir_if_not_exists(".build/src")) return 1;
+    if (!nob_mkdir_if_not_exists(".build/src/systems")) return 1;
+
+    nob_cc(&cmd);
+    nob_cmd_append(&cmd, "-c");
+    nob_cc_flags(&cmd);
+    nob_cc_inputs(&cmd, "src/systems/display_grid.c");
+    nob_cc_output(&cmd, ".build/src/systems/display_grid.o");
+    if (!nob_cmd_run(&cmd)) return 1;
+
     nob_cc(&cmd);
     nob_cmd_append(&cmd, "-c", "-x", "c", "-DNOB_IMPLEMENTATION");
     nob_cc_flags(&cmd);
@@ -22,7 +32,7 @@ int main(int argc, char **argv) {
     if (!nob_cmd_run(&cmd)) return 1;
 
     nob_cc(&cmd);
-    nob_cc_inputs(&cmd, ".build/nob.o", ".build/main.o", "-lraylib", "-lm");
+    nob_cc_inputs(&cmd, ".build/nob.o", ".build/main.o", ".build/src/systems/display_grid.o", "-lraylib", "-lm");
     nob_cc_output(&cmd, "dude");
     if (!nob_cmd_run(&cmd)) return 1;
 }
